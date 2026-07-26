@@ -1,0 +1,54 @@
+models:
+  - name: stg_geolocation
+    description: "Cleaned and deduplicated geolocation data. Multiple lat/lng entries per zip code prefix are averaged into a single representative coordinate. Used to enrich customer and seller location data."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: geolocation_zip_code_prefix
+        data_type: text
+        description: "5-digit Brazilian zip code prefix. Unique after deduplication."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - unique
+          - column_length:
+              length: 5
+
+      - name: geolocation_lat
+        data_type: float
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: geolocation_lng
+        data_type: float
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: geolocation_city
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: geolocation_state
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: _source_file
+        data_type: text
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
+
+      - name: _row_hash
+        data_type: text

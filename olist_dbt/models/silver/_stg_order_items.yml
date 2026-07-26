@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  - name: stg_order_items
+    description: "Cleaned order items data. Grain is order_id + order_item_id — one row per product within an order. total_item_value is a computed column."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: order_id
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
+
+      - name: order_item_id
+        data_type: number
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: product_id
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_products')
+              field: product_id
+
+      - name: seller_id
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_sellers')
+              field: seller_id
+
+      - name: shipping_limit_date
+        data_type: timestamp_ntz
+
+      - name: price
+        data_type: number
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: freight_value
+        data_type: number
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: _source_file
+        data_type: text
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
+
+      - name: _row_hash
+        data_type: text

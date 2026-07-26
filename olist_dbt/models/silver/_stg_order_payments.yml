@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: stg_order_payments
+    description: "Cleaned payment data. One order can have multiple payment rows using different payment methods sequentially. Grain is order_id + payment_sequential."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: order_id
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
+
+      - name: payment_sequential
+        data_type: number
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: payment_type
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['credit_card', 'boleto', 'voucher', 'debit_card', 'not_defined']
+
+      - name: payment_installments
+        data_type: number
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: payment_value
+        data_type: number
+        description: "Payment amount in BRL."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: _source_file
+        data_type: text
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
+
+      - name: _row_hash
+        data_type: text

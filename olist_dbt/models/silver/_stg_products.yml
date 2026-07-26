@@ -1,0 +1,55 @@
+models:
+  - name: stg_products
+    description: "Cleaned product data with English category names joined from product_category_name_translation. Typos in original column names fixed here."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: product_id
+        data_type: text
+        description: "Unique product identifier."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - unique
+
+      - name: product_category_name_english
+        data_type: text
+        description: "English translation of product category. Defaults to uncategorized if no translation found."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: product_name_length
+        data_type: number
+        description: "Length of product name in characters. Renamed from product_name_lenght (typo fixed)."
+
+      - name: product_description_length
+        data_type: number
+        description: "Length of product description. Renamed from product_description_lenght (typo fixed)."
+
+      - name: product_photos_qty
+        data_type: number
+
+      - name: product_weight_g
+        data_type: number
+
+      - name: product_length_cm
+        data_type: number
+
+      - name: product_height_cm
+        data_type: number
+
+      - name: product_width_cm
+        data_type: number
+
+      - name: _source_file
+        data_type: text
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
+
+      - name: _row_hash
+        data_type: text

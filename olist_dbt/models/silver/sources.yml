@@ -1,0 +1,16 @@
+sources:
+  - name: bronze
+    database: OLIST_DB
+    schema: BRONZE_SCHEMA
+    description: Raw Olist data ingested from S3 through COPY INTO and Snowpipe.
+
+    tables:
+      - name: raw_customers
+      - name: raw_sellers
+      - name: raw_products
+      - name: raw_product_category
+      - name: raw_geolocation
+      - name: raw_orders
+      - name: raw_order_items
+      - name: raw_order_payments
+      - name: raw_order_reviews

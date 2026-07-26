@@ -1,0 +1,47 @@
+models:
+  - name: stg_sellers
+    description: "Cleaned seller data. Contains seller location used to identify which seller fulfilled each product."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: seller_id
+        data_type: text
+        description: "Unique seller identifier."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - unique
+
+      - name: seller_zip_code_prefix
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - column_length:
+              length: 5
+
+      - name: seller_city
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: seller_state
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: _source_file
+        data_type: text
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
+
+      - name: _row_hash
+        data_type: text

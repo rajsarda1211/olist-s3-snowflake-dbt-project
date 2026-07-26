@@ -1,0 +1,55 @@
+models:
+  - name: stg_customers
+    description: "Cleaned customer-order bridge data. Each row represents a unique order-customer combination."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: customer_id
+        data_type: varchar
+        description: "Order-specific identifier. Unique per row."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_unique_id
+        data_type: varchar
+        description: "Real customer identifier. NOT unique in this table."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: customer_zip_code_prefix
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - column_length:
+              length: 5
+
+      - name: customer_city
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: customer_state
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: _source_file
+        data_type: varchar
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
+
+      - name: _row_hash
+        data_type: varchar

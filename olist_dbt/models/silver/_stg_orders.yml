@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: "Cleaned and typed orders data. Incremental model — only processes new orders since last run based on order_purchase_timestamp."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: order_id
+        data_type: text
+        description: "Unique order identifier."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        data_type: text
+        description: "Order-specific customer identifier. Foreign key to stg_customers."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+
+      - name: order_status
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['delivered', 'shipped', 'canceled', 'invoiced', 'processing', 'approved', 'created', 'unavailable']
+
+      - name: order_purchase_timestamp
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: order_approved_at
+        data_type: timestamp_ntz
+        description: "Nullable — approval can be pending."
+
+      - name: order_delivered_carrier_date
+        data_type: timestamp_ntz
+        description: "Nullable — not all orders have been picked up by carrier."
+
+      - name: order_delivered_customer_date
+        data_type: timestamp_ntz
+        description: "Nullable — not all orders have been delivered."
+
+      - name: order_estimated_delivery_date
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: _source_file
+        data_type: text
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
+
+      - name: _row_hash
+        data_type: text

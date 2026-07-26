@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: stg_order_reviews
+    description: "Cleaned and deduplicated review data. 814 duplicate review_ids exist in source — deduplicated by keeping latest review_creation_date. Not all orders have reviews — reviews arrive after delivery. Null comments coalesced to empty string."
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: review_id
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: order_id
+        data_type: text
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
+
+      - name: review_score
+        data_type: number
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5]
+
+      - name: review_comment_title
+        data_type: text
+        description: "Coalesced to empty string if null."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: review_comment_message
+        data_type: text
+        description: "Coalesced to empty string if null."
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: review_creation_date
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: review_answer_timestamp
+        data_type: timestamp_ntz
+        description: "Nullable — not all reviews receive a seller response."
+
+      - name: _source_file
+        data_type: text
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
+
+      - name: _row_hash
+        data_type: text
