@@ -18,7 +18,11 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   olist_dbt:
     silver:
-      +materialized: table
+      +materialized: incremental
+      +on_schema_change: append_new_columns
+      
+      stg_geolocation:
+        +materialized: table
 
     gold:
       +schema: GOLD_SCHEMA

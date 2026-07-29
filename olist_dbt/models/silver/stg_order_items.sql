@@ -1,7 +1,5 @@
 {{ config(
-    materialized='incremental',
-    unique_key=['order_id', 'order_item_id'],
-    on_schema_change='append_new_columns'
+    unique_key=['order_id', 'order_item_id']
 ) }}
 
 WITH source AS (
