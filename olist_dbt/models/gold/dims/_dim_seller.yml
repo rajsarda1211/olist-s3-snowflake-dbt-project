@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: dim_seller
+    description: "SCD Type 2 seller dimension built from snp_sellers snapshot, enriched with lat/lng from stg_geolocation. Multiple rows per seller_id represent historical location versions."
+    columns:
+      - name: seller_key
+        data_type: text
+        description: "Surrogate key — unique per seller version."
+        tests:
+          - not_null
+          - unique
+
+      - name: seller_id
+        data_type: text
+        description: "Natural key. NOT unique alone due to SCD2 history."
+        tests:
+          - not_null
+
+      - name: seller_city
+        data_type: text
+        tests:
+          - not_null
+
+      - name: seller_state
+        data_type: text
+        tests:
+          - not_null
+
+      - name: seller_zip_code_prefix
+        data_type: text
+        tests:
+          - not_null
+
+      - name: geolocation_lat
+        data_type: float
+        description: "Nullable — some zip codes may not have a geolocation match."
+
+      - name: geolocation_lng
+        data_type: float
+        description: "Nullable — some zip codes may not have a geolocation match."
+
+      - name: dbt_valid_from
+        data_type: timestamp_ntz
+        tests:
+          - not_null
+
+      - name: dbt_valid_to
+        data_type: timestamp_ntz
+
+      - name: is_current
+        data_type: boolean
+        tests:
+          - not_null

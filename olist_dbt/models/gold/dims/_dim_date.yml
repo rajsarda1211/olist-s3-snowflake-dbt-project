@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Generated date dimension spanning 2016-01-01 to 2020-12-31, covering the full Olist dataset date range."
+
+    columns:
+      - name: date_key
+        data_type: number
+        description: "Primary key in YYYYMMDD integer format."
+        tests:
+          - not_null
+          - unique
+
+      - name: full_date
+        data_type: date
+        description: "Calendar date."
+        tests:
+          - not_null
+
+      - name: year
+        data_type: number
+        description: "Calendar year."
+
+      - name: quarter
+        data_type: text
+        description: "Calendar quarter (Q1-Q4)."
+
+      - name: fiscal_year
+        data_type: text
+        description: "Fiscal year (April-March)."
+
+      - name: fiscal_quarter
+        data_type: text
+        description: "Fiscal quarter (Q1-Q4)."
+
+      - name: month
+        data_type: number
+        description: "Calendar month number (1-12)."
+
+      - name: month_name
+        data_type: text
+        description: "Calendar month name."
+
+      - name: day_of_month
+        data_type: number
+        description: "Day of the month (1-31)."
+
+      - name: week_of_year
+        data_type: number
+        description: "Week number within the calendar year."
+
+      - name: day_of_week
+        data_type: number
+        description: "Day of the week returned by Snowflake."
+
+      - name: day_name
+        data_type: text
+        description: "Name of the day."
+
+      - name: is_weekend
+        data_type: boolean
+        description: "True if the date falls on a weekend."

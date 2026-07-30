@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: dim_product
+    description: "SCD Type 2 product dimension built from snp_products snapshot. Multiple rows per product_id represent historical category/dimension versions."
+    columns:
+      - name: product_key
+        data_type: text
+        description: "Surrogate key — unique per product version."
+        tests:
+          - not_null
+          - unique
+
+      - name: product_id
+        data_type: text
+        description: "Natural key. NOT unique alone due to SCD2 history."
+        tests:
+          - not_null
+
+      - name: product_category_name_english
+        data_type: text
+        tests:
+          - not_null
+
+      - name: product_name_length
+        data_type: number
+
+      - name: product_description_length
+        data_type: number
+
+      - name: product_photos_qty
+        data_type: number
+
+      - name: product_weight_g
+        data_type: number
+
+      - name: product_length_cm
+        data_type: number
+
+      - name: product_height_cm
+        data_type: number
+
+      - name: product_width_cm
+        data_type: number
+
+      - name: dbt_valid_from
+        data_type: timestamp_ntz
+        tests:
+          - not_null
+
+      - name: dbt_valid_to
+        data_type: timestamp_ntz
+
+      - name: is_current
+        data_type: boolean
+        tests:
+          - not_null

@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: dim_location
+    description: "Location dimension built from deduplicated geolocation data. One row per zip code prefix. Used to enrich customer and seller records with lat/lng."
+    columns:
+      - name: location_key
+        data_type: text
+        description: "Surrogate key generated from zip_code_prefix."
+        tests:
+          - not_null
+          - unique
+
+      - name: geolocation_zip_code_prefix
+        data_type: text
+        description: "Natural key — 5-digit zip code prefix."
+        tests:
+          - not_null
+          - unique
+
+      - name: geolocation_city
+        data_type: text
+        tests:
+          - not_null
+
+      - name: geolocation_state
+        data_type: text
+        tests:
+          - not_null
+
+      - name: geolocation_lat
+        data_type: float
+        tests:
+          - not_null
+
+      - name: geolocation_lng
+        data_type: float
+        tests:
+          - not_null

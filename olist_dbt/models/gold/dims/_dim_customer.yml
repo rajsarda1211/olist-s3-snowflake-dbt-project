@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: "SCD Type 2 customer dimension built from snp_customers snapshot. Multiple rows per customer_unique_id represent historical address versions."
+    columns:
+      - name: customer_key
+        data_type: text
+        description: "Surrogate key — unique per customer version."
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_unique_id
+        data_type: text
+        description: "Natural key — real customer identifier. NOT unique alone due to SCD2 history."
+        tests:
+          - not_null
+
+      - name: customer_zip_code_prefix
+        data_type: text
+        tests:
+          - not_null
+
+      - name: customer_city
+        data_type: text
+        tests:
+          - not_null
+
+      - name: customer_state
+        data_type: text
+        tests:
+          - not_null
+
+      - name: dbt_valid_from
+        data_type: timestamp_ntz
+        tests:
+          - not_null
+
+      - name: dbt_valid_to
+        data_type: timestamp_ntz
+        description: "NULL indicates this is the current record."
+
+      - name: is_current
+        data_type: boolean
+        tests:
+          - not_null
