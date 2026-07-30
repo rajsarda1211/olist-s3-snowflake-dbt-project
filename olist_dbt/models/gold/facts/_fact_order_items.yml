@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: fact_order_items
+    description: "Order line item fact table. Grain is one row per product within an order. Joins to product and seller dimensions using date-range join to reflect their state at time of order (SCD2-aware). Base table for the OBT."
+    columns:
+      - name: order_id
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fact_orders')
+              field: order_id
+
+      - name: order_item_id
+        data_type: number
+        tests:
+          - not_null
+
+      - name: product_key
+        data_type: text
+        description: "FK to dim_product — reflects product attributes at time of order, not current."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_product')
+              field: product_key
+
+      - name: seller_key
+        data_type: text
+        description: "FK to dim_seller — reflects seller attributes at time of order, not current."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_seller')
+              field: seller_key
+
+      - name: date_key
+        data_type: number
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
+      - name: shipping_limit_date
+        data_type: timestamp_ntz
+
+      - name: price
+        data_type: number
+        tests:
+          - not_null
+
+      - name: freight_value
+        data_type: number
+        tests:
+          - not_null
+
+      - name: total_item_value
+        data_type: number
+        description: "Computed: price + freight_value."

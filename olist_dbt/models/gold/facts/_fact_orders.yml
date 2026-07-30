@@ -1,0 +1,90 @@
+version: 2
+
+models:
+  - name: fact_orders
+    description: "Order-level fact table. Grain is one row per order. Aggregates payments, reviews, and item costs. Joins to current customer record."
+    columns:
+      - name: order_id
+        data_type: text
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_key
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_key
+
+      - name: date_key
+        data_type: number
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
+      - name: order_status
+        data_type: text
+        tests:
+          - not_null
+
+      - name: order_purchase_timestamp
+        data_type: timestamp_ntz
+        tests:
+          - not_null
+
+      - name: order_approved_at
+        data_type: timestamp_ntz
+
+      - name: order_delivered_carrier_date
+        data_type: timestamp_ntz
+
+      - name: order_delivered_customer_date
+        data_type: timestamp_ntz
+
+      - name: order_estimated_delivery_date
+        data_type: timestamp_ntz
+        tests:
+          - not_null
+
+      - name: total_payment_value
+        data_type: number
+        description: "Sum of actual payments made, from stg_order_payments."
+
+      - name: payment_types
+        data_type: text
+
+      - name: max_installments
+        data_type: number
+
+      - name: total_product_price
+        data_type: number
+        description: "Sum of product prices from order_items — for cost breakdown/validation against total_payment_value."
+
+      - name: total_freight_value
+        data_type: number
+
+      - name: total_order_value
+        data_type: number
+        description: "total_product_price + total_freight_value."
+
+      - name: total_items_count
+        data_type: number
+
+      - name: avg_review_score
+        data_type: number
+
+      - name: review_count
+        data_type: number
+
+      - name: delivery_days
+        data_type: number
+
+      - name: is_late_delivery
+        data_type: boolean
+
+      - name: approval_days
+        data_type: number
