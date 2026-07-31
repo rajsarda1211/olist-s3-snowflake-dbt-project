@@ -32,14 +32,6 @@ models:
         tests:
           - not_null
 
-      - name: geolocation_lat
-        data_type: float
-        description: "Nullable — some zip codes may not have a geolocation match."
-
-      - name: geolocation_lng
-        data_type: float
-        description: "Nullable — some zip codes may not have a geolocation match."
-
       - name: dbt_valid_from
         data_type: timestamp_ntz
         tests:
