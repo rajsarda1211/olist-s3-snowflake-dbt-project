@@ -36,3 +36,7 @@ models:
 
       obt:
         +materialized: table
+
+seeds:
+  olist_dbt:
+    +schema: GOLD_SCHEMA
