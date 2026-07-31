@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: obt_orders
+    description: "Fully denormalized One Big Table combining fact_order_items with fact_orders, dim_customer, dim_product, dim_seller, and dim_date via metadata-driven joins. Adding a new dimension requires only a new row in seeds/obt_join_config.csv."
+    columns:
+      - name: order_id
+        data_type: text
+        description: "From fact_order_items base table."
+        tests:
+          - not_null
+
+      - name: order_item_id
+        data_type: number
+        tests:
+          - not_null
+
+      - name: product_key
+        data_type: text
+        tests:
+          - not_null
+
+      - name: seller_key
+        data_type: text
+        tests:
+          - not_null
+
+      - name: customer_key
+        data_type: text
+        tests:
+          - not_null
+
+      - name: date_key
+        data_type: number
+        tests:
+          - not_null
+
+      - name: price
+        data_type: number
+        tests:
+          - not_null
+
+      - name: total_item_value
+        data_type: number
+        tests:
+          - not_null
