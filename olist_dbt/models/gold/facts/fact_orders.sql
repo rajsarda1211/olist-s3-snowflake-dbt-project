@@ -73,6 +73,7 @@ final AS (
         r.review_count,
         DATEDIFF(day, o.order_purchase_timestamp, o.order_delivered_customer_date) AS delivery_days,
         CASE
+            WHEN o.order_delivered_customer_date IS NULL THEN NULL
             WHEN o.order_delivered_customer_date > o.order_estimated_delivery_date THEN TRUE
             ELSE FALSE
         END AS is_late_delivery,
@@ -84,7 +85,14 @@ final AS (
         ON c.customer_unique_id = dc.customer_unique_id
         AND (
             o.order_purchase_timestamp BETWEEN dc.dbt_valid_from AND COALESCE(dc.dbt_valid_to, CURRENT_TIMESTAMP())
-            OR (o.order_purchase_timestamp < dc.dbt_valid_from AND dc.is_current = TRUE)
+            OR (
+                dc.is_current = TRUE
+                AND NOT EXISTS (
+                    SELECT 1 FROM dim_customer_history dc2
+                    WHERE dc2.customer_unique_id = dc.customer_unique_id
+                    AND o.order_purchase_timestamp BETWEEN dc2.dbt_valid_from AND COALESCE(dc2.dbt_valid_to, CURRENT_TIMESTAMP())
+                )
+            )
         )
     LEFT JOIN payments_agg p
         ON o.order_id = p.order_id
