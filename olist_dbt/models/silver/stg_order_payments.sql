@@ -26,6 +26,15 @@ cleaned AS (
             FROM {{ this }}
         )
     {% endif %}
+),
+
+deduplicated AS (
+    SELECT *
+    FROM cleaned
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY order_id, payment_sequential
+        ORDER BY _loaded_at DESC
+    ) = 1
 )
 
-SELECT * FROM cleaned
+SELECT * FROM deduplicated
