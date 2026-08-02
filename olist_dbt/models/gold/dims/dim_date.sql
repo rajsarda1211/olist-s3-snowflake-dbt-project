@@ -1,7 +1,7 @@
 WITH date_spine AS (
     SELECT
         DATEADD(day, seq4(), '2016-01-01') AS full_date
-    FROM TABLE(GENERATOR(ROWCOUNT => 1827)) 
+    FROM TABLE(GENERATOR(ROWCOUNT => 4380)) 
 ),
 
 enriched AS (
