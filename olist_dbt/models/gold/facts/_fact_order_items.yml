@@ -59,3 +59,6 @@ models:
       - name: total_item_value
         data_type: number
         description: "Computed: price + freight_value."
+
+      - name: _loaded_at
+        data_type: timestamp_ntz

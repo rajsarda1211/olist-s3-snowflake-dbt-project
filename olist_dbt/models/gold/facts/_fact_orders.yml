@@ -88,3 +88,6 @@ models:
 
       - name: approval_days
         data_type: number
+
+      - name: _loaded_at
+        data_type: timestamp_ntz
