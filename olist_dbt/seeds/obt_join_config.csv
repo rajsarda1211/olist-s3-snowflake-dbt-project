@@ -2,5 +2,5 @@ table_name,join_key,join_type,alias,source_alias,extra_excludes
 dim_product,product_key,LEFT,dp,foi,"dbt_valid_from,dbt_valid_to,is_current"
 dim_seller,seller_key,LEFT,ds,foi,"dbt_valid_from,dbt_valid_to,is_current"
 dim_date,date_key,LEFT,dd,foi,
-fact_orders,order_id,LEFT,fo,foi,date_key
+fact_orders,order_id,LEFT,fo,foi,"date_key,_loaded_at"
 dim_customer,customer_key,LEFT,dc,fo,"dbt_valid_from,dbt_valid_to,is_current"
