@@ -13,7 +13,7 @@ category AS (
 cleaned AS (
     SELECT
         p.product_id,
-        COALESCE(c.product_category_name_english, 'uncategorized') AS product_category_name_english,
+        INITCAP(REPLACE(TRIM(COALESCE(c.product_category_name_english, 'uncategorized')), '_', ' ')) AS product_category_name_english,
         TRY_CAST(p.product_name_lenght AS INT)                     AS product_name_length,
         TRY_CAST(p.product_description_lenght AS INT)              AS product_description_length,
         TRY_CAST(p.product_photos_qty AS INT)                      AS product_photos_qty,
