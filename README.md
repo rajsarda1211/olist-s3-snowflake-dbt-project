@@ -4,6 +4,33 @@ An end-to-end data engineering project built on the [Olist Brazilian E-Commerce 
 
 ---
 
+> **A note on this README:** this document is written as a technical narrative and portfolio artifact — it explains the architecture, design decisions, and validated behavior of the pipeline, rather than serving as a setup/installation guide. The project depends on a live Snowflake environment and AWS S3 bucket that are not included or reproducible by cloning this repo alone.
+
+## Table of Contents
+
+1. [Project Overview](#1-project-overview)
+2. [Business Objective](#2-business-objective)
+3. [Dataset Overview](#3-dataset-overview)
+4. [Technology Stack](#4-technology-stack)
+5. [Architecture Overview](#5-architecture-overview)
+6. [AWS S3 Data Lake Setup](#6-aws-s3-data-lake-setup)
+7. [Snowflake Infrastructure](#7-snowflake-infrastructure-built-via-snowsight)
+8. [Bronze Layer](#8-bronze-layer)
+9. [Silver Layer](#9-silver-layer-dbt)
+10. [SCD Type 2 Design](#10-scd-type-2-design)
+11. [Gold Layer](#11-gold-layer)
+12. [Data Quality & Testing Framework](#12-data-quality--testing-framework)
+13. [SCD2 & Incremental Simulation](#13-scd2--incremental-simulation--proof-of-work)
+14. [Business Insights Discovered](#14-business-insights-discovered)
+15. [Power BI Dashboard](#15-power-bi-dashboard)
+16. [Key Design Decisions & Tradeoffs](#16-key-design-decisions--tradeoffs)
+17. [Testing in Action — Real Bugs Caught](#17-testing-in-action--real-bugs-caught)
+18. [Known Limitations](#18-known-limitations)
+19. [Project Structure](#19-project-structure)
+20. [Future Improvements](#20-future-improvements)
+
+---
+
 ## 1. Project Overview
 
 This project simulates a production-grade analytics pipeline for an e-commerce marketplace. Raw CSV data lands in AWS S3, is ingested into Snowflake via a mix of Snowpipe (event-driven) and COPY INTO (batch), transformed through dbt across Bronze/Silver/Gold layers, and modeled into a star schema with full historical tracking on key dimensions.
@@ -131,6 +158,10 @@ Two-part CDC approach:
 - **Snowpipe (event-driven, SQS-triggered)**: `orders`, `order_items`, `order_payments`, `order_reviews`, `customers`
 - **COPY INTO (manual/batch)**: `sellers`, `products`, `product_category`, `geolocation`
 
+### 7.5 Infrastructure Scripts
+
+The exact SQL used to build all Snowflake-native infrastructure — RBAC, warehouses, database/schemas, Stage and file format, Bronze table DDL, Snowpipe setup, and Streams — is available in [`snowflake_infrastructure/`](snowflake_infrastructure/).
+
 ---
 
 ## 8. Bronze Layer
@@ -180,7 +211,7 @@ Snapshots read from Silver, deduplicated to one row per natural key (ordered by 
 
 | Table | Type | Notes |
 |---|---|---|
-| `dim_customer` | SCD2 | City/state/zip only — no lat/lng (see Design Decisions) |
+| `dim_customer` | SCD2 | City/state/zip only — no lat/lng |
 | `dim_product` | SCD2 | Category, dimensions |
 | `dim_seller` | SCD2 | City/state/zip |
 | `dim_location` | Static | Standalone zip → lat/lng, not joined into OBT by default |
@@ -228,6 +259,10 @@ Generated via `dbt docs generate` + `dbt docs serve`, this DAG shows the full de
 
   ![dbt test result](docs_images/dbt_test_result.png)
 
+### 12.1 Manual Validation in Snowsight
+
+**Full validation evidence:** beyond the automated test suite, every layer boundary was manually validated with a dedicated set of 25 SQL queries — covering Bronze row counts and metadata, Silver deduplication and cleaning, snapshot version integrity, Gold dimension/fact consistency, OBT correctness, and end-to-end reconciliation from Bronze through to the OBT. Each query is documented with its expected result and a screenshot of the actual output. See the [Olist Validation Document](https://docs.google.com/document/d/1IQo6jVfY88rVX60p1ixkbaNMw-fKnDG1/edit?usp=sharing&ouid=115452149900090949306&rtpof=true&sd=true) for the complete query set and evidence.
+
 ---
 
 ## 13. SCD2 & Incremental Simulation — Proof of Work
@@ -244,37 +279,7 @@ Rather than assume the pipeline handles change correctly, it was proven through 
 - Total simulated order count after both batches: exactly 3 (not 5) — proving 2 of the 5 uploaded order records were correctly treated as updates
 - Zero fanout across the entire `obt_orders` table
 
-**Verification queries run:**
-
-```sql
--- 1. Confirms 3-version SCD2 chain, middle version has both boundaries populated
-SELECT customer_key, customer_city, dbt_valid_from, dbt_valid_to, is_current
-FROM GOLD_SCHEMA.dim_customer
-WHERE customer_unique_id = '<target_customer>'
-ORDER BY dbt_valid_from;
- 
--- 2. Confirms no duplicate row was created on re-upload with new data
-SELECT order_id, COUNT(*)
-FROM GOLD_SCHEMA.fact_orders
-WHERE order_id IN ('<order_1>', '<order_2>')
-GROUP BY order_id;
- 
--- 3. Confirms the row was genuinely updated, not left stale
-SELECT order_id, order_status, order_delivered_customer_date, delivery_days, is_late_delivery
-FROM GOLD_SCHEMA.fact_orders
-WHERE order_id IN ('<order_1>', '<order_2>');
- 
--- 4. Confirms zero fanout across the entire OBT, not just the simulated rows
-SELECT order_id, order_item_id, COUNT(*)
-FROM GOLD_SCHEMA.obt_orders
-GROUP BY order_id, order_item_id
-HAVING COUNT(*) > 1;
- 
--- 5. Final sanity check: 5 uploaded order records → exactly 3 rows, not 5
-SELECT COUNT(*) FROM GOLD_SCHEMA.fact_orders WHERE order_id LIKE 'sim_%';
-```
-
-Screenshot evidence: `[insert: dim_customer 3-version query result]`, `[insert: order COUNT(*)=1 no-duplicate query result]`, `[insert: dbt test 137/137 passing]`
+*See [Section 3 of the validation document](https://docs.google.com/document/d/1IQo6jVfY88rVX60p1ixkbaNMw-fKnDG1/edit?usp=sharing&ouid=115452149900090949306&rtpof=true&sd=true) (introduced in Section 12) for the complete SQL and result screenshots.*
 
 ---
 
@@ -286,7 +291,48 @@ Screenshot evidence: `[insert: dim_customer 3-version query result]`, `[insert: 
 
 ---
 
-## 15. Key Design Decisions & Tradeoffs
+## 15. Power BI Dashboard
+
+A 4-page interactive dashboard built on top of `obt_orders`, turning the pipeline's output into business-consumable KPIs — the same OBT that answers the business questions in Section 2, now visualized.
+
+**Pages:**
+
+| Page | Focus | Key visuals |
+|---|---|---|
+| Executive Overview | Headline business metrics | Total orders, revenue, average order value, average customer rating; quarterly revenue vs. order volume trend |
+| Product Category Performance | Category-level performance | Revenue by top 15 categories, total orders by category, price-vs-freight scatter by category, full category summary table (order count, total value, avg product value, avg freight) |
+| Seller Performance | Seller quality, volume, and speed | Top 10 sellers by revenue, top 10 sellers by order volume, best-performing sellers (min. 100 orders, rating ≥ 4.2), worst-performing sellers (min. 50 orders, rating < 3.5), seller-by-seller average order approval time |
+| Geographical Overview | Regional performance | Revenue by state, top 10 cities by revenue (treemap), states ranked by average customer satisfaction |
+
+**Build notes:**
+- Originally connected live to Snowflake (Import mode, via `ANALYST_ROLE` on `ANALYSIS_WH` — read-only on Gold, matching the RBAC design in Section 7.1). Since the Snowflake trial expires shortly after this project's completion, the data source was switched to a static CSV export of `obt_orders` (see `dashboard_data/`) before publishing, so the dashboard remains fully functional indefinitely, independent of Snowflake access.
+- Deduplication logic (e.g. `SUMX(DISTINCT ...)`) was required specifically for order-level measures carried through from `fact_orders` (`total_payment_value`, `avg_review_score`, `delivery_days`) — since `obt_orders` is at item grain, these values repeat across every item belonging to the same order, and a plain `SUM()`/`AVERAGE()` would double-count them. Item-level measures like `price` and `total_item_value` required no such adjustment, since each row's value is already unique to that specific item.
+- Minimum order-count thresholds applied to seller and state satisfaction rankings, to avoid small-sample noise skewing results (e.g. a seller with 1 order and a 5-star rating outranking an established seller with hundreds of consistent 4-star orders)
+- `product_category_name_english` cleanup (underscore removal, title casing) was added to `stg_products.sql` after noticing raw category labels in the dashboard — a real gap in the original Silver transformation, fixed at the source rather than patched cosmetically in Power BI
+- Fiscal Year and Fiscal Quarter slicers on every page, with cross-visual interactions reviewed and selectively disabled where charts answer independent questions (e.g. best vs. worst sellers should not filter each other)
+
+**Two custom DAX measures were required on the Executive Overview page**, since `total_payment_value` and average order value both needed order-level deduplication before aggregating:
+
+```dax
+Total Revenue (Payments) = SUMX(DISTINCT('OBT_ORDERS'[ORDER_ID]), CALCULATE(MAX('OBT_ORDERS'[TOTAL_PAYMENT_VALUE])))
+```
+
+```dax
+Average Order Value = SUM('OBT_ORDERS'[PRICE]) / DISTINCTCOUNT('OBT_ORDERS'[ORDER_ID])
+```
+
+**Dashboard file:** [Download the Power BI file (.pbix)](https://drive.google.com/file/d/1p6ipDDbTjutIJ5g5Hz0OjMra8BcgZL1K/view?usp=sharing) — open in Power BI Desktop (free) to explore all 4 pages interactively. Data is imported and cached in the file itself, so it works standalone with no live connection required.
+
+**Underlying data:** the CSV export powering this dashboard is available in [`dashboard_data/`](dashboard_data/) for reference and independent verification.
+
+![Dashboard — Executive Overview](docs_images/dashboard_overview.png)
+![Dashboard — Product Category Performance](docs_images/dashboard_products.png)
+![Dashboard — Seller Performance](docs_images/dashboard_sellers.png)
+![Dashboard — Geographical Overview](docs_images/dashboard_geography.png)
+
+---
+
+## 16. Key Design Decisions & Tradeoffs
 
 - **`customer_id` vs `customer_unique_id`**: Olist's `customers` table is an order-customer bridge, not a master record — `customer_id` is unique per order, `customer_unique_id` identifies the real person. This distinction shapes the entire customer dimension design.
 - **Star schema over snowflake schema**: `dim_customer`/`dim_seller` intentionally keep city/state/zip inline rather than referencing `dim_location`, favoring the star schema's query-simplicity philosophy over normalization.
@@ -295,7 +341,7 @@ Screenshot evidence: `[insert: dim_customer 3-version query result]`, `[insert: 
 
 ---
 
-## 16. Testing in Action — Real Bugs Caught
+## 17. Testing in Action — Real Bugs Caught
  
 The 137-test suite and the incremental/SCD2 simulation weren't just checkboxes — they surfaced genuine logic errors before they could silently corrupt data:
  
@@ -312,13 +358,13 @@ Each of these was found, root-caused, and fixed during development — not left 
 
 ---
 
-## 17. Known Limitations
+## 18. Known Limitations
 
 **Pre-tracking historical attribution:** SCD2 snapshot tracking began when this project's snapshots were first run (2026), while real Olist order data spans 2016–2020. Orders that predate any snapshot history will always resolve to the *current* dimensional state at query time, not their true historical state, since that history was never captured. This is an inherent, unavoidable limitation of retroactively applying SCD2 to pre-existing historical data — not a pipeline defect. In a live system where SCD2 tracking runs from the point data first enters the system, this limitation would not exist.
 
 ---
 
-## 18. Project Structure
+## 19. Project Structure
 
 ```
 olist_dbt/
@@ -337,7 +383,7 @@ olist_dbt/
 
 ---
 
-## 19. Future Improvements
+## 20. Future Improvements
 
 - Orchestration (Airflow/Dagster) to automate the run sequence and remove manual `dbt run`/`dbt snapshot` ordering
 - CI/CD pipeline to run `dbt test` automatically on every commit
@@ -346,4 +392,4 @@ olist_dbt/
 
 ## Author's Note
 
-Every architectural decision, bug, and fix documented above was found and resolved through direct hands-on debugging — including a genuine 2-day AWS IAM troubleshooting effort, a Snowflake internal optimizer error, and a deliberately designed 2-batch simulation to prove (not assume) that the incremental and SCD2 logic works correctly under real change conditions.
+This project was built end-to-end, layer by layer, with every architectural decision — RBAC design, ingestion strategy, CDC approach, SCD Type 2 implementation, the metadata-driven OBT — made deliberately and documented as it happened, not retrofitted afterward. The 137-test suite and the two-batch incremental/SCD2 simulation exist because I wanted proof the pipeline handles real change correctly, not just confidence that it built once. Several genuine bugs surfaced during that process — a Snowflake query optimizer limitation, a subtle NULL-handling defect, an incremental MERGE edge case — and each is documented with its root cause and fix, not smoothed over. The Power BI dashboard closes the loop: the same business questions this project set out to answer are now something a stakeholder could actually open and explore.
