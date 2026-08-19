@@ -151,7 +151,7 @@ Three warehouses, isolating compute by workload for cost tracking:
 
 Two-part CDC approach:
 1. **Metadata columns** stamped on every Bronze row at ingestion: `_source_file` (via `METADATA$FILENAME`), `_loaded_at` (default `CURRENT_TIMESTAMP()`), `_row_hash` (MD5 of business columns)
-2. **Snowflake Streams** on all 9 Bronze tables, tracking every INSERT for downstream consumption
+2. **Snowflake Streams** on all 9 Bronze tables, tracking every change (insert, update, delete) for downstream consumption. Streams are provisioned but not currently consumed by the transformation layer — incremental processing instead relies on `_loaded_at` timestamp filtering (see Known Limitations). One intended use: propagating deletions from Bronze to Silver, by consuming rows where `METADATA$ACTION = 'DELETE'` and `METADATA$ISUPDATE = FALSE`, and issuing a corresponding delete downstream.
 
 ### 7.4 Ingestion split
 
@@ -362,6 +362,8 @@ Each of these was found, root-caused, and fixed during development — not left 
 
 **Pre-tracking historical attribution:** SCD2 snapshot tracking began when this project's snapshots were first run (2026), while real Olist order data spans 2016–2020. Orders that predate any snapshot history will always resolve to the *current* dimensional state at query time, not their true historical state, since that history was never captured. This is an inherent, unavoidable limitation of retroactively applying SCD2 to pre-existing historical data — not a pipeline defect. In a live system where SCD2 tracking runs from the point data first enters the system, this limitation would not exist.
 
+**No delete propagation:** the pipeline is designed around append-only ingestion — Bronze only ever receives new records, and incremental processing (via `_loaded_at` filtering) has no mechanism to detect or propagate a record deleted at the source. Snowflake Streams are provisioned specifically to enable this (see Section 7.3), but are not yet consumed by the transformation layer, so a deletion would currently need to be handled manually at each layer if it ever occurred.
+
 ---
 
 ## 19. Project Structure
@@ -384,9 +386,10 @@ olist_dbt/
 ---
 
 ## 20. Future Improvements
-
 - Orchestration (Airflow/Dagster) to automate the run sequence and remove manual `dbt run`/`dbt snapshot` ordering
 - CI/CD pipeline to run `dbt test` automatically on every commit
+- Full CDC implementation by consuming Snowflake Streams directly in Silver models — reading from the Stream on incremental runs and falling back to the base Bronze table on `--full-refresh`, since Streams only expose unconsumed changes and cannot rebuild full history
+- Delete propagation across Silver, Gold facts, and SCD2 snapshots, building on the Stream-based CDC consumption above
 - Environment separation (dev/staging/prod targets)
 - Point-in-time attribution improvements for pre-tracking historical orders (acknowledged as fundamentally unrecoverable for truly historical data, but hybrid heuristics could reduce the gap for anything post-simulation)
 
